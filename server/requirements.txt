@@ -1,0 +1,18 @@
+# Financial Sentiment Analyzer — Python Requirements
+# Install with: pip install -r requirements.txt
+
+# Flask web framework (Python service)
+flask>=3.0.0
+
+# HuggingFace ecosystem (FinBERT model)
+transformers>=4.40.0
+torch>=2.0.0          # CPU build is fine; for GPU install torch with CUDA
+
+# Financial data API (fact-checker)
+yfinance>=0.2.38
+
+# Numerical utilities
+numpy>=1.24.0
+
+# (Optional) faster tokenization
+tokenizers>=0.19.0
