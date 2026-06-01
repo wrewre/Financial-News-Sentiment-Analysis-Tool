@@ -6,8 +6,8 @@ import { Readability } from '@mozilla/readability';
 import { JSDOM } from 'jsdom';
 
 const app = express();
-const PORT = 3001;
-const PYTHON_SERVICE = 'http://localhost:5001';
+const PORT = process.env.PORT || 3001;
+const PYTHON_SERVICE = process.env.PYTHON_SERVICE_URL || 'http://localhost:5001';
 
 app.use(cors());
 app.use(express.json());

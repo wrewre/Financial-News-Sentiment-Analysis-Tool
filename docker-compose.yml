@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  python-backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.python
+    ports:
+      - "5001:5001"
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  node-backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.node
+    ports:
+      - "3001:3001"
+    environment:
+      - PYTHON_SERVICE_URL=http://python-backend:5001
+      - PORT=3001
+    depends_on:
+      - python-backend
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        # Since the browser accesses the API, we use localhost:3001 which is mapped to the host
+        - VITE_API_URL=http://localhost:3001
+    ports:
+      - "5173:80"
+    depends_on:
+      - node-backend

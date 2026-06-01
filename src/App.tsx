@@ -5,7 +5,7 @@ import SummaryChart from './components/SummaryChart';
 import ParagraphDisplay from './components/ParagraphDisplay';
 import { AnalysisResult } from './types';
 
-const API_URL = 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 function App() {
   const [loading, setLoading] = useState(false);

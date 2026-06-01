@@ -1,0 +1,20 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Pre-download the FinBERT model so it's cached in the Docker image
+RUN python -c "from transformers import pipeline; pipeline('text-classification', model='ProsusAI/finbert')"
+
+COPY flask_service.py fact_checker.py ./
+
+EXPOSE 5001
+
+CMD ["python", "flask_service.py"]

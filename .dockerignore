@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-ssr
+.git
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+saved_models/
+*.pkl
