@@ -32,4 +32,6 @@ env/
 venv/
 .venv/
 saved_models/
+server/saved_model/
+financial-news-dataset-main/
 *.pkl

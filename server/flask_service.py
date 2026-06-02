@@ -26,8 +26,18 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 # ─── FinBERT Model Loading ────────────────────────────────────────────────────
-# Model: ProsusAI/finbert
-# Fine-tuned on Financial PhraseBank dataset
+# Model: ProsusAI/finbert (or custom trained local model)
+import os
+
+model_path = "./saved_model"
+if os.path.exists(model_path):
+    print(f"[INFO] Loading custom fine-tuned model from {model_path}...")
+    model_name = model_path
+else:
+    print("[INFO] Loading base model from ProsusAI/finbert...")
+    model_name = "ProsusAI/finbert"
+
+print("Loading model weights... (This may take a moment)")
 # Labels: positive, negative, neutral (note: lowercase from HuggingFace)
 logger.info("=" * 60)
 logger.info("Loading ProsusAI/finbert...")
@@ -40,7 +50,7 @@ logger.info(f"Running on: {device_name}")
 try:
     sentiment_pipeline = pipeline(
         task="text-classification",
-        model="ProsusAI/finbert",
+        model=model_name,
         device=device_id,
         top_k=None,          # Return scores for all 3 labels
         truncation=True,
@@ -52,11 +62,13 @@ except Exception as e:
     logger.error("Make sure 'transformers' and 'torch' are installed.")
     sys.exit(1)
 
-# Label normalizer (FinBERT returns lowercase)
+# Label normalizer (FinBERT returns lowercase, our custom model returns LABEL_0/LABEL_1)
 LABEL_MAP = {
     "positive": "Positive",
     "negative": "Negative",
     "neutral":  "Neutral",
+    "label_0":  "Negative", # 0 = Down
+    "label_1":  "Positive", # 1 = Up
 }
 
 # ─── Fact Checker ─────────────────────────────────────────────────────────────
