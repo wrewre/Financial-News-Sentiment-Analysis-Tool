@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  python-tests:
+    name: Python Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          cd server
+          pip install flask feedparser apscheduler flask-cors yfinance numpy
+
+      - name: Smoke test — import all modules
+        run: |
+          cd server
+          python -c "from database import init_db, get_feed, get_stats, get_watchlist; init_db(); print('✓ database.py OK')"
+          python -c "import pipeline; print('✓ pipeline.py OK')"
+          python -c "from fact_checker import FactChecker; print('✓ fact_checker.py OK')"
+
+      - name: Verify watchlist is seeded
+        run: |
+          cd server
+          python -c "
+          from database import init_db, get_watchlist
+          init_db()
+          wl = get_watchlist()
+          assert len(wl) >= 15, f'Expected >= 15 watchlist items, got {len(wl)}'
+          print(f'✓ Watchlist seeded with {len(wl)} tickers')
+          "
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build React app
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          test -f dist/index.html && echo "✓ index.html present"
+          test -d dist/assets    && echo "✓ assets directory present"
