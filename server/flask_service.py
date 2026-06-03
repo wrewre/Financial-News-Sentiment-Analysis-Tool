@@ -1,18 +1,20 @@
 """
-Flask Microservice — Financial Sentiment Analysis
-Uses ProsusAI/finbert: BERT fine-tuned on 10,000 financial sentences.
-Accuracy: 97% on Financial PhraseBank (full agreement subset).
+Flask Microservice — Financial Sentiment Analysis + Market Intelligence Feed
+Uses a custom-trained FinBERT model to predict stock market impact (Bullish/Bearish).
+Includes an autonomous RSS pipeline that monitors 15+ stocks every 60 minutes.
 
 Loads model ONCE at startup — no per-request reload overhead.
 """
 
 import logging
 import sys
+import threading
 from flask import Flask, request, jsonify
 import torch
 from transformers import pipeline
 
 from fact_checker import FactChecker
+from database import init_db, get_feed, get_stats, get_watchlist
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -177,6 +179,49 @@ def analyze():
     return jsonify({"results": results})
 
 
+# ─── Feed / Dashboard API Routes ─────────────────────────────────────────────
+
+@app.route("/api/feed", methods=["GET"])
+def feed():
+    ticker = request.args.get("ticker")
+    limit  = int(request.args.get("limit", 60))
+    return jsonify(get_feed(ticker=ticker, limit=limit))
+
+
+@app.route("/api/stats", methods=["GET"])
+def stats():
+    return jsonify(get_stats())
+
+
+@app.route("/api/watchlist", methods=["GET"])
+def watchlist_route():
+    return jsonify(get_watchlist())
+
+
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    # Init database
+    init_db()
+
+    # Run the pipeline once immediately in a background thread
+    def start_pipeline():
+        import time
+        time.sleep(5)  # Wait for Flask to fully start
+        try:
+            from pipeline import run_pipeline
+            logger.info("[Pipeline] Running initial fetch...")
+            run_pipeline()
+
+            # Schedule subsequent runs every 60 minutes
+            from apscheduler.schedulers.background import BackgroundScheduler
+            scheduler = BackgroundScheduler()
+            scheduler.add_job(run_pipeline, 'interval', minutes=60, id='rss_pipeline')
+            scheduler.start()
+            logger.info("[Pipeline] Scheduler started — running every 60 minutes.")
+        except Exception as e:
+            logger.error(f"[Pipeline] Failed to start: {e}")
+
+    pipeline_thread = threading.Thread(target=start_pipeline, daemon=True)
+    pipeline_thread.start()
+
     app.run(host="0.0.0.0", port=5001, debug=False, use_reloader=False)
